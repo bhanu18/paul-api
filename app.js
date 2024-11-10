@@ -33,7 +33,7 @@ app.use(session({
   secret: 'keyboardcat',
   resave: false,
   saveUninitialized: false,
-  // store: MongoStore.create({ mongoUrl: process.env.MONGO_DB_CONNECTION_STRING }),
+  store: MongoStore.create({ mongoUrl: process.env.MONGO_DB_CONNECTION_STRING }),
 }));
 
 // passport

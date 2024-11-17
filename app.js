@@ -6,8 +6,9 @@ import logger from 'morgan';
 import * as dotenv from "dotenv";
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
-import UserRoutes from './routes/users.js'
+import UserRoutes from './routes/users.js';
 import cookieParser from 'cookie-parser';
+import HomeRoutes from './routes/home.js';
 
 import passportConfig from './config/passport.js';
 import passport from 'passport';
@@ -40,7 +41,9 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use('/orders', orderRoutes);
+// app.use('/orders', orderRoutes);
+
+app.use('/', HomeRoutes);
 
 app.use('/auth', UserRoutes);
 
@@ -48,11 +51,14 @@ app.use('/auth', UserRoutes);
 app.use(logger('dev'));
 
 const PORT = process.env.PORT || 5000;
+const CONNECTION_URL = process.env.MONGO_DB_CONNECTION_STRING;
 
 const appconnect = async () => {
   try {
 
-    app.listen(PORT, () => console.log(`Server Running on Port: http://localhost:${PORT}`));
+    const db_conn = await mongoose.connect(CONNECTION_URL);
+
+    app.listen(PORT, () => console.log(`Server Running on Port: http://localhost:${PORT} and DB running ${db_conn.connection.host}`));
 
   } catch (error) {
     console.log(error)

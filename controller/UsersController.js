@@ -1,25 +1,28 @@
-import UserModel from "../models/Users.js";
+import UserModel from "../models/User.js";
 import bcrypt from 'bcryptjs';
 import passport from "passport";
 import Role from "../models/Role.js";
+import jwt from 'jsonwebtoken';
 
-export const findUser = async (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
-        if (err) throw err;
-        if (!user) res.json({"success": false,"msg":" Email or password is incorrect"});
-        else {
-            req.logIn(user, async (err) => {
-                const token = randomSting(16);
-                let tokenObj = {
-                    token : token
-                }
-                await UserModel.findByIdAndUpdate({ _id: req.user._id }, tokenObj );
-                if (err) throw err;
-                res.json({"success": true, "msg":"Successfully Authenticated", "role": req.user.role, "user_id": req.user._id, "user_name": req.user.name, "token": req.user.token });
-                console.log(req.user);
-            });
-        }
-    })(req, res, next);
+const secretKey = 'secret_cat';
+
+export const login = async (req, res, next) => {
+
+    try {
+
+        // create user login with jwt token
+        const { email, password } = req.body;
+
+        const jwt = jwt.sign({}, secretKey, { expiresIn: '1h' });
+
+        const refreshToken = jwt.sign({ user }, secretKey, { expiresIn: '1d' });
+
+        res.cookie('refreshToken', refreshToken, { httpOnly: false, sameSite: 'strict' }).header('Authorization', accessToken).send(user);
+    } catch (error) {
+        console.log(err);
+        res.status(500);
+    }
+
 }
 
 export const createUser = async (req, res) => {
@@ -37,7 +40,7 @@ export const createUser = async (req, res) => {
             });
 
             bcrypt.genSalt(10, (err, salt) =>
-            bcrypt.hash(newUser.password, salt, (err, hash) => {
+                bcrypt.hash(newUser.password, salt, (err, hash) => {
                     if (err) throw err;
                     newUser.password = hash;
 
@@ -52,7 +55,7 @@ export const createUser = async (req, res) => {
 
 export const getUser = async (req, res) => {
     try {
-        //const user = await UserModel.findById( {_id: req.user._id}).lean();
+        const user = await UserModel.findById({ _id: req.user._id }).lean();
         res.send(req.user);
     } catch (error) {
         res.status(500);
@@ -61,7 +64,7 @@ export const getUser = async (req, res) => {
 }
 
 export const logUserOut = (req, res) => {
-    req.logout(function(err) {
+    req.logout(function (err) {
         if (err) { return err; }
         req.send('success_msg', 'Logged out succesfully')
     });
@@ -88,12 +91,21 @@ export const addrole = async (req, res) => {
     }
 }
 
-function randomSting(length) {
-    let result           = '';
-    let characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let charactersLength = characters.length;
-    for ( let i = 0; i < length; i++ ) {
-      result += characters.charAt(Math.floor(Math.random() * charactersLength));
-   }
-   return result;
+export const refreshToken = async () => {
+    const refreshToken = req.body.refreshToken;
+
+    if (!refreshToken) {
+        return res.status(401).send('Access Denied. No refresh token provided.');
+    }
+
+    try {
+        const decoded = jwt.verify(refreshToken, secretKey);
+        const accessToken = jwt.sign({ user: decoded.user }, secretKey, { expiresIn: '1h' });
+
+        res
+            .header('Authorization', accessToken)
+            .send(decoded.user);
+    } catch (error) {
+        return res.status(400).send('Invalid refresh token.');
+    }
 }

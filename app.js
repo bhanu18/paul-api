@@ -9,6 +9,7 @@ import MongoStore from 'connect-mongo';
 import UserRoutes from './routes/users.js';
 import cookieParser from 'cookie-parser';
 import HomeRoutes from './routes/home.js';
+import orderRoutes from './routes/orders.js';
 
 import passportConfig from './config/passport.js';
 import passport from 'passport';
@@ -41,9 +42,9 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// app.use('/orders', orderRoutes);
-
 app.use('/', HomeRoutes);
+
+app.use('/orders', orderRoutes);
 
 app.use('/auth', UserRoutes);
 

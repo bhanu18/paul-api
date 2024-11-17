@@ -9,15 +9,15 @@ const secretKey = 'secret_cat';
 export const login = async (req, res, next) => {
 
     try {
+        // create user login with password verification
+        const user = {
+            username: req.body.email,
+            password: res.body.password,
+        };
 
-        // create user login with jwt token
-        const { email, password } = req.body;
+        const token = jwt.sign({ user }, secretKey, { expiresIn: '1h' });
 
-        const jwt = jwt.sign({}, secretKey, { expiresIn: '1h' });
-
-        const refreshToken = jwt.sign({ user }, secretKey, { expiresIn: '1d' });
-
-        res.cookie('refreshToken', refreshToken, { httpOnly: false, sameSite: 'strict' }).header('Authorization', accessToken).send(user);
+        res.header('Authorization', token).send(user);
     } catch (error) {
         console.log(err);
         res.status(500);
@@ -92,6 +92,7 @@ export const addrole = async (req, res) => {
 }
 
 export const refreshToken = async () => {
+
     const refreshToken = req.body.refreshToken;
 
     if (!refreshToken) {
@@ -109,3 +110,19 @@ export const refreshToken = async () => {
         return res.status(400).send('Invalid refresh token.');
     }
 }
+
+
+const authenticate = (req, res, next) => {
+    const token = req.headers['authorization'];
+    if (!token) {
+        return res.status(401).send('Access Denied. No token provided.');
+    }
+
+    try {
+        const decoded = jwt.verify(token, secretKey);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        return res.status(400).send('Invalid Token.');
+    }
+};

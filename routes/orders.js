@@ -1,7 +1,8 @@
 import express from 'express';
+import { allOrder } from '../controller/OrdersController.js';
 
 const router = express.Router();
 
-router.get('/create', () => {
-    // Create a new order
-})
+router.get('/', allOrder);
+
+export default router;

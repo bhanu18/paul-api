@@ -10,14 +10,23 @@ export const login = async (req, res, next) => {
 
     try {
         // create user login with password verification
-        const user = {
-            username: req.body.email,
-            password: res.body.password,
-        };
+        passport.authenticate("local", (err, user, info) => {
+            if (err) throw err;
+            if (!user) res.json({ "success": false, "msg": " Email or password is incorrect" });
+            else {
+                req.logIn(user, async (err) => {
+                    
+                    const token = jwt.sign({ user }, secretKey, { expiresIn: '1h' });
 
-        const token = jwt.sign({ user }, secretKey, { expiresIn: '1h' });
+                    if (err) throw err;
+                   
+                    res.json({ "success": true, "msg": "Successfully Authenticated", "role": req.user.role, "user_id": req.user._id, "user_name": req.user.name, "accessToken":token });
+                   
+                    console.log(req.user);
+                });
+            }
+        })(req, res, next);
 
-        res.header('Authorization', token).send(user);
     } catch (error) {
         console.log(err);
         res.status(500);
